@@ -62,16 +62,13 @@ func updateMembers(mc *MyContext, members []Member) {
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
-	mc.Infof("SAVED1")
 	var fo Organization
 	err = datastore.Get(mc.Context, key, &fo)
-	mc.Infof("SAVED2")
 
 	if err != nil {
 		mc.Infof("%#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
-	mc.Infof("SAVED3")
 	mc.Infof("found %#v", fo)
 }

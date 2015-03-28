@@ -33,6 +33,9 @@ func (o *Organization) Load(c <-chan datastore.Property) error {
 		}
 	}
 
+	// If I don't close it the process got stuck
+	close(loadChan)
+
 	return datastore.LoadStruct(o, loadChan)
 }
 
