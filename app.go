@@ -1,4 +1,4 @@
-package e1
+package main
 
 import (
 	"fmt"
@@ -14,6 +14,8 @@ import (
 
 func init() {
 	http.HandleFunc("/", doit)
+
+	http.HandleFunc("/pull-people", Wrap(GetPublicMembersList, &MyContext{}))
 }
 
 // https://developer.github.com/v3/activity/events/types/#pullrequestevent
