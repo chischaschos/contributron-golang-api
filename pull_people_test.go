@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"code.google.com/p/appengine-go/appengine/aetest"
+	"appengine/aetest"
 	"github.com/nicholasf/fakepoint"
 )
 
@@ -36,14 +36,15 @@ func TestCallPublicMembersListEndpoint(t *testing.T) {
 ]`).
 		SetHeader("Content-Type", "application/json")
 
-	c, err := aetest.NewContext(nil)
+	c, err := aetest.NewContext(&aetest.Options{"testapp", true})
 
 	if err != nil {
 		t.Log(err)
 		t.Fail()
 	}
+	defer c.Close()
 
-	mc := &MyContext{Context: c, Client: maker.Client()}
+	mc := &MyContext{Env: "test", Context: c, Client: maker.Client()}
 	wrapee := Wrap(GetPublicMembersList, mc)
 	w := httptest.NewRecorder()
 
@@ -56,6 +57,10 @@ func TestCallPublicMembersListEndpoint(t *testing.T) {
 
 	wrapee(w, req)
 
-	t.Log(w.Body.String())
+	if w.Code != 200 {
+		t.Log(w.Code)
+		t.Log(w.Body.String())
+		t.Fail()
+	}
 
 }

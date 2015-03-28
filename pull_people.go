@@ -2,27 +2,22 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"appengine/datastore"
 )
 
-type Member struct {
-	Login     string `json:"login"`
-	AvatarURL string `json:"avatar_url"`
-	URL       string `json:"url"`
-}
-
-//func GetPublicMembersList(w http.ResponseWriter, r *http.Request) {
 func GetPublicMembersList(mc *MyContext) {
-	fmt.Println(callPublicMembersListEndpoint(mc))
-
+	members := callPublicMembersListEndpoint(mc)
+	updateMembers(mc, members)
 }
 
 func callPublicMembersListEndpoint(mc *MyContext) []Member {
 	req, err := http.NewRequest("GET", "https://api.github.com/orgs/crowdint/public_members", nil)
 
 	if err != nil {
+		mc.Infof("%#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -32,12 +27,14 @@ func callPublicMembersListEndpoint(mc *MyContext) []Member {
 	defer resp.Body.Close()
 
 	if err != nil {
+		mc.Infof("%#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
+		mc.Infof("%#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -46,8 +43,35 @@ func callPublicMembersListEndpoint(mc *MyContext) []Member {
 	err = json.Unmarshal(body, &members)
 
 	if err != nil {
+		mc.Infof("%#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
 	return members
+}
+
+func updateMembers(mc *MyContext, members []Member) {
+	organization := &Organization{Name: "crowdint", Members: members}
+	mc.Infof("to-create %#v", organization)
+
+	key := datastore.NewKey(mc.Context, "Configuration", "organization", 0, nil)
+	_, err := datastore.Put(mc.Context, key, organization)
+
+	if err != nil {
+		mc.Infof("%#v", err)
+		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
+	}
+
+	mc.Infof("SAVED1")
+	var fo Organization
+	err = datastore.Get(mc.Context, key, &fo)
+	mc.Infof("SAVED2")
+
+	if err != nil {
+		mc.Infof("%#v", err)
+		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
+	}
+
+	mc.Infof("SAVED3")
+	mc.Infof("found %#v", fo)
 }
