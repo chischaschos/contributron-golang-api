@@ -60,3 +60,13 @@ type Member struct {
 	AvatarURL string `json:"avatar_url"`
 	URL       string `json:"url"`
 }
+
+type HistoricArchive struct {
+	PayloadAction                   string
+	PayloadPullRequestMerged        string
+	PayloadPullRequestTitle         string
+	PayloadPullRequestUrl           string
+	PayloadPullRequestUserLogin     string
+	PayloadPullRequestMergedByLogin string
+	PayloadPullRequestMergedAt      string
+}
