@@ -99,7 +99,7 @@ func updateHistoricArchive(mc *MyContext, queryResponse *bigquery.QueryResponse)
 	var historicArchives []HistoricArchive
 
 	for _, row := range queryResponse.Rows {
-		keys = append(keys, datastore.NewKey(mc.Context, "HisotoricData", row.F[0].V.(string), 0, nil))
+		keys = append(keys, datastore.NewKey(mc.Context, HistoricArchiveEntityKind, row.F[0].V.(string), 0, nil))
 		historicArchives = append(historicArchives, HistoricArchive{
 			PayloadAction:                   row.F[1].V.(string),
 			PayloadPullRequestMerged:        row.F[2].V.(string),

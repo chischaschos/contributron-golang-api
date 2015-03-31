@@ -7,6 +7,10 @@ import (
 	"appengine/datastore"
 )
 
+const (
+	HistoricArchiveEntityKind = "HistoricArchive"
+)
+
 type Organization struct {
 	Name    string
 	Members []Member `datastore:"-"`
