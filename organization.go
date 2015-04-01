@@ -69,3 +69,13 @@ func UpdateOrganizationMembers(c appengine.Context, org *Organization) error {
 
 	return err
 }
+
+func LoadOrganization(c appengine.Context) (*Organization, error) {
+	key := datastore.NewKey(c, ConfigurationEntityKind, "organization", 0, nil)
+
+	var org Organization
+	err := datastore.Get(c, key, &org)
+
+	return &org, err
+
+}
