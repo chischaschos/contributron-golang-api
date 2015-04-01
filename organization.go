@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 
+	"appengine"
 	"appengine/datastore"
 )
 
 const (
-	HistoricArchiveEntityKind = "HistoricArchive"
+	ConfigurationEntityKind = "Configuration"
 )
 
 type Organization struct {
@@ -59,18 +60,12 @@ func (o *Organization) Save(c chan<- datastore.Property) error {
 	return datastore.SaveStruct(o, c)
 }
 
-type Member struct {
-	Login     string `json:"login"`
-	AvatarURL string `json:"avatar_url"`
-	URL       string `json:"url"`
-}
+func UpdateOrganizationMembers(c appengine.Context, org *Organization) error {
+	c.Infof("Updating %#v", org)
 
-type HistoricArchive struct {
-	PayloadAction                   string
-	PayloadPullRequestMerged        string
-	PayloadPullRequestTitle         string
-	PayloadPullRequestUrl           string
-	PayloadPullRequestUserLogin     string
-	PayloadPullRequestMergedByLogin string
-	PayloadPullRequestMergedAt      string
+	configurationID := "organization"
+	key := datastore.NewKey(c, ConfigurationEntityKind, configurationID, 0, nil)
+	_, err := datastore.Put(c, key, org)
+
+	return err
 }
