@@ -4,26 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
-
-	"appengine/datastore"
 )
 
-type RankedUser struct {
-	Name     string
-	PRs      []string
-	TotalPRs int
-}
-
-type RankedUsers []*RankedUser
-
-func (a RankedUsers) Len() int           { return len(a) }
-func (a RankedUsers) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a RankedUsers) Less(i, j int) bool { return a[i].TotalPRs < a[j].TotalPRs }
-
 func GetAllTimeStats(mc *MyContext) {
-	historicArchive := loadHistoricArchive(mc)
+	historicArchive, err := LoadHistoricArchive(mc.Context)
 
-	mc.Infof("Loaded historic archive", len(historicArchive))
+	if err != nil {
+		mc.Infof("could not load historic archive %#v", err)
+		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
+	}
+
+	mc.Infof("Loaded %d historic archive entries", len(historicArchive))
 
 	users := map[string]*RankedUser{}
 	rankedUsers := []*RankedUser{}
@@ -51,17 +42,4 @@ func GetAllTimeStats(mc *MyContext) {
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
-}
-
-func loadHistoricArchive(mc *MyContext) []HistoricArchive {
-	var historicArchive []HistoricArchive
-	q := datastore.NewQuery(HistoricArchiveEntityKind)
-	_, err := q.GetAll(mc.Context, &historicArchive)
-
-	if err != nil {
-		mc.Infof("could not load historic archive %#v", err)
-		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
-	}
-
-	return historicArchive
 }
