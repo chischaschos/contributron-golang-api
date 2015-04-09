@@ -1,6 +1,7 @@
 package main
 
-const WeeklyUpdateQuery = `
+const (
+	WeeklyUpdateQuery = `
 SELECT
   type, JSON_EXTRACT(payload, '$.action') as action, JSON_EXTRACT(payload, '$.merged') as merged
 FROM
@@ -9,7 +10,7 @@ WHERE
   actor.login ='dhh' AND type = 'PullRequestEvent';
 `
 
-const HistoricArchiveQuery = `
+	HistoricArchiveQuery = `
 SELECT
   concat( string(payload_pull_request_id), "-", payload_pull_request_user_login, "-", payload_pull_request_merged_by_login) as id,
   payload_action,
@@ -28,3 +29,17 @@ WHERE
   payload_pull_request_merged_by_login IN (%s)
 LIMIT 1000
 `
+
+	CurrentYearQuery = `
+SELECT
+  id,
+  type,
+  payload,
+  actor.login
+FROM
+  TABLE_DATE_RANGE(githubarchive:day.events_, TIMESTAMP('2015-01-01'), USEC_TO_TIMESTAMP (NOW()))
+WHERE
+  type = 'PullRequestEvent' AND
+  actor.login IN (%s)
+`
+)
