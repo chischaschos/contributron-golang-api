@@ -28,8 +28,13 @@ func GetAllTimeStats(mc *MyContext) {
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
+	for i, r := range rankedUsers {
+		r.Rank = i + 1
+	}
+
 	bytes, err := json.MarshalIndent(rankedUsers, "", "\t")
 
+	mc.W.Header().Add("Content-Type", "application/json")
 	_, err = mc.W.Write(bytes)
 
 	if err != nil {
@@ -42,10 +47,22 @@ func analyzeEvents(mc *MyContext, events []Event) ([]*RankedUser, error) {
 	users := map[string]*RankedUser{}
 	rankedUsers := []*RankedUser{}
 
+	org, _ := LoadOrganization(mc)
+
+	cm := map[string]bool{}
+
+	for _, m := range org.Members {
+		cm[m.Login] = true
+	}
+
 	for _, event := range events {
 		userLogin := event.PullRequest.User.Login
 		mergedByLogin := event.PullRequest.MergedBy.Login
 		pr := PR{URL: event.URL}
+
+		if _, ok := cm[userLogin]; !ok {
+			continue
+		}
 
 		// Initialize this user structure
 		if _, ok := users[userLogin]; !ok {
@@ -55,10 +72,10 @@ func analyzeEvents(mc *MyContext, events []Event) ([]*RankedUser, error) {
 		}
 
 		if ReposToIgnoreRegExp.MatchString(event.URL) {
-			pr.Notes = append(pr.Notes, "Ignored because "+ReposToIgnoreRegExp.String()+" made me do it")
+			pr.Notes = append(pr.Notes, "Ignored repo "+ReposToIgnoreRegExp.String())
 
 		} else if userLogin == mergedByLogin {
-			pr.Notes = append(pr.Notes, "Ignored because I merged my own PR")
+			pr.Notes = append(pr.Notes, "Ignored self merge")
 
 		} else {
 			users[userLogin].TotalPRs++
