@@ -1,8 +1,13 @@
 package main
 
+type PR struct {
+	URL   string
+	Notes []string
+}
+
 type RankedUser struct {
 	Name     string
-	PRs      []string
+	PRs      []PR
 	TotalPRs int
 }
 

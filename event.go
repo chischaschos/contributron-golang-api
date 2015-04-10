@@ -23,7 +23,7 @@ type PullRequest struct {
 	MergedAt string `json:"merged_at"`
 	Title    string `json:"title"`
 	URL      string `json:"url"`
-	User     `json:"user"`
+	User     User   `json:"user"`
 }
 
 type Payload struct {
