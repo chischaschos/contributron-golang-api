@@ -32,18 +32,21 @@ func GetCurrentYearArchive(mc *MyContext) {
 		}
 
 		if event.Type == "PullRequestEvent" {
-			var payload Payload
 			data := row.F[2].V.(string)
 
-			err = json.Unmarshal([]byte(data), &payload)
+			err = json.Unmarshal([]byte(data), &event.Payload)
 
 			if err != nil {
 				mc.Infof("Unmarshaling error", err)
 				http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 			}
+
 			events = append(events, event)
 		}
+
 	}
+
+	mc.Infof("Total events processed: %d", len(events))
 
 	err = UpdateEvents(mc.Context, events)
 

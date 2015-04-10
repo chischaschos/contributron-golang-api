@@ -8,28 +8,30 @@ import (
 )
 
 func GetAllTimeStats(mc *MyContext) {
-	historicArchive, err := LoadHistoricArchive(mc.Context)
+	events, err := LoadEvents(mc.Context)
 
 	if err != nil {
 		mc.Infof("could not load historic archive %#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
-	mc.Infof("Loaded %d historic archive entries", len(historicArchive))
+	mc.Infof("Loaded %d historic archive entries", len(events))
 
 	users := map[string]*RankedUser{}
 	rankedUsers := []*RankedUser{}
 
-	for _, ha := range historicArchive {
-		if _, ok := users[ha.PayloadPullRequestUserLogin]; !ok {
-			rankedUser := &RankedUser{Name: ha.PayloadPullRequestUserLogin}
-			users[ha.PayloadPullRequestUserLogin] = rankedUser
+	for _, event := range events {
+		userLogin := event.PullRequest.User.Login
+
+		if _, ok := users[userLogin]; !ok {
+			rankedUser := &RankedUser{Name: userLogin}
+			users[userLogin] = rankedUser
 			rankedUsers = append(rankedUsers, rankedUser)
 		}
 
-		users[ha.PayloadPullRequestUserLogin].TotalPRs++
-		users[ha.PayloadPullRequestUserLogin].PRs =
-			append(users[ha.PayloadPullRequestUserLogin].PRs, ha.PayloadPullRequestUrl)
+		users[userLogin].TotalPRs++
+		users[userLogin].PRs =
+			append(users[userLogin].PRs, event.PullRequest.URL)
 	}
 
 	sort.Sort(RankedUsers(rankedUsers))
@@ -46,20 +48,20 @@ func GetAllTimeStats(mc *MyContext) {
 }
 
 func GetAllTimeStatsNoCrowd(mc *MyContext) {
-	historicArchive, err := LoadHistoricArchive(mc.Context)
+	events, err := LoadEvents(mc.Context)
 
 	if err != nil {
 		mc.Infof("could not load historic archive %#v", err)
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
-	mc.Infof("Loaded %d historic archive entries", len(historicArchive))
+	mc.Infof("Loaded %d historic archive entries", len(events))
 
 	users := map[string]*RankedUser{}
 	rankedUsers := []*RankedUser{}
 
-	for _, ha := range historicArchive {
-		matched, err := regexp.MatchString("magma|crowdint", ha.PayloadPullRequestUrl)
+	for _, event := range events {
+		matched, err := regexp.MatchString("magma|crowdint", event.PullRequest.URL)
 
 		if err != nil {
 			mc.Infof("Error matching string: %#v", err)
@@ -67,16 +69,17 @@ func GetAllTimeStatsNoCrowd(mc *MyContext) {
 		}
 
 		if !matched {
+			userLogin := event.PullRequest.User.Login
 
-			if _, ok := users[ha.PayloadPullRequestUserLogin]; !ok {
-				rankedUser := &RankedUser{Name: ha.PayloadPullRequestUserLogin}
-				users[ha.PayloadPullRequestUserLogin] = rankedUser
+			if _, ok := users[userLogin]; !ok {
+				rankedUser := &RankedUser{Name: userLogin}
+				users[userLogin] = rankedUser
 				rankedUsers = append(rankedUsers, rankedUser)
 			}
 
-			users[ha.PayloadPullRequestUserLogin].TotalPRs++
-			users[ha.PayloadPullRequestUserLogin].PRs =
-				append(users[ha.PayloadPullRequestUserLogin].PRs, ha.PayloadPullRequestUrl)
+			users[userLogin].TotalPRs++
+			users[userLogin].PRs =
+				append(users[userLogin].PRs, event.PullRequest.URL)
 		}
 	}
 

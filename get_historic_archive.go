@@ -24,7 +24,33 @@ func GetHistoricArchive(mc *MyContext) {
 	mc.Infof("Job completed?: %#v", queryResponse.JobComplete)
 	mc.Infof("Total rows: %d", queryResponse.TotalRows)
 
-	err = UpdateHistoricArchive(mc, queryResponse)
+	events := []Event{}
+
+	for _, row := range queryResponse.Rows {
+		event := Event{
+			ID:   row.F[0].V.(string),
+			Type: "PullRequestEvent",
+			Payload: Payload{
+				Action: row.F[1].V.(string),
+				PullRequest: PullRequest{
+					Merged: true,
+					Title:  row.F[3].V.(string),
+					URL:    row.F[4].V.(string),
+					User: User{
+						Login: row.F[5].V.(string),
+					},
+					MergedBy: User{
+						Login: row.F[6].V.(string),
+					},
+					MergedAt: row.F[1].V.(string),
+				},
+			},
+		}
+
+		events = append(events, event)
+	}
+
+	err = UpdateEvents(mc, events)
 
 	if err != nil {
 		mc.Infof("Could not update historic archive: %#v", err)

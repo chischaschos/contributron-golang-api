@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"appengine"
+	"code.google.com/p/appengine-go/appengine"
+
 	"appengine/datastore"
 )
 
@@ -79,15 +80,61 @@ func (e *Event) Save(c chan<- datastore.Property) error {
 	return datastore.SaveStruct(e, c)
 }
 
+func LoadEvents(c appengine.Context) ([]Event, error) {
+	var events []Event
+
+	q := datastore.NewQuery(EventEntityKind)
+
+	_, err := q.GetAll(c, &events)
+
+	return events, err
+}
+
 func UpdateEvents(c appengine.Context, events []Event) error {
+	var kBatch []*datastore.Key
+	var eventBatch []Event
+	batchSize := 0
+
 	for _, event := range events {
 		key := datastore.NewKey(c, EventEntityKind, event.ID, 0, nil)
-		_, err := datastore.Put(c, key, &event)
+
+		if batchSize < 500 {
+			kBatch = append(kBatch, key)
+			eventBatch = append(eventBatch, event)
+			batchSize++
+		} else {
+			err := UpdateEventBatch(c, kBatch, eventBatch)
+
+			if err != nil {
+				c.Infof("Could not update historic archive: %#v", err)
+				return err
+			}
+
+			kBatch = []*datastore.Key{}
+			eventBatch = []Event{}
+			batchSize = 0
+		}
+	}
+
+	if batchSize > 0 {
+		err := UpdateEventBatch(c, kBatch, eventBatch)
 
 		if err != nil {
-			c.Infof("Error %#v, %#v updating: %#v", key, event, err)
+			c.Infof("Could not update historic archive: %#v", err)
 			return err
 		}
 	}
+
+	return nil
+
+}
+
+func UpdateEventBatch(c appengine.Context, kBatch []*datastore.Key, eventBatch []Event) error {
+	_, err := datastore.PutMulti(c, kBatch, eventBatch)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
