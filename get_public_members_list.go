@@ -34,6 +34,16 @@ func GetPublicMembersList(mc *MyContext) {
 		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
 	}
 
+	bytes, err := json.MarshalIndent(members, "", "\t")
+
+	mc.W.Header().Add("Content-Type", "application/json")
+	_, err = mc.W.Write(bytes)
+
+	if err != nil {
+		mc.Infof("could not write response %#v", err)
+		http.Error(mc.W, err.Error(), http.StatusInternalServerError)
+	}
+
 }
 
 func callPublicMembersListEndpoint(mc *MyContext, org *Organization) ([]Member, error) {
